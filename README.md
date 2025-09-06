@@ -12,16 +12,55 @@ A lightweight Dockerized **sidecar** for HTML→PDF using headless Google Chrome
 
 ## API
 
-**Endpoint:** `POST /api/`  
+**Endpoint:** `POST /api/`
+
 **Request body (choose one):**
-- `application/json` → `{"url":"https://example.com"}`
-- `application/x-www-form-urlencoded` or `multipart/form-data` → `url=https://example.com`
+- **JSON URL mode** → `{"url":"https://example.com"}`  
+  (Chromium downloads the page itself. Best for public or internally routable URLs like `http://symfony/route` in Docker networks.)
+- **JSON HTML mode** → `{"html":"<!doctype html>...","baseUrl":"http://symfony/"}`  
+  Send raw HTML. Optional **`baseUrl`** injects `<base href="...">` so **relative assets** (`/build/app.css`, `images/x.png`, …) resolve from that host.  
+  *If both `html` and `url` are provided, `html` is preferred.*
+- **Form mode** (`application/x-www-form-urlencoded` or `multipart/form-data`) →  
+  `url=...` **or** `html=...` `[&baseUrl=...]`
 
 **Response:**
 - `200 OK` → `application/pdf` (inline)
-- `400 Bad Request` → invalid or missing `url`
+- `400 Bad Request` → invalid or missing input (`url` / `html`)
 - `405 Method Not Allowed` → use `POST`
-- `500 Internal Server Error` → Chromium failed to render
+- `500 Internal Server Error` → Chromium failed to render (see container logs)
+
+### Examples
+
+**URL (JSON)**
+```bash
+curl -X POST http://localhost:8080/api/ \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://example.com"}' \
+  --output out.pdf
+```
+
+**HTML (JSON, heredoc for readability)**
+```bash
+curl -sS -X POST http://localhost:8080/api/ \
+  -H 'Content-Type: application/json' \
+  --data-binary @- \
+  -o out.pdf <<'JSON'
+{
+  "html": "<!doctype html><html><head><meta charset=\"utf-8\"><title>Test</title><style>body{font-family:system-ui,Arial,sans-serif;margin:40px}.box{border:1px solid #ddd;padding:16px;border-radius:8px}h1{font-size:20px;margin:0 0 12px}p{margin:0}</style></head><body><div class=\"box\"><h1>chromium-pdf-api test</h1><p>Generated via HTML payload.</p><p>ภาษาไทย 中文 😃</p></div></body></html>",
+  "baseUrl": "http://symfony/"
+}
+JSON
+```
+
+**Form data (URL)**
+```bash
+curl -X POST http://localhost:8080/api/ \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  --data-urlencode "url=https://example.com" \
+  --output out.pdf
+```
+
+> **TIP:** If your HTML references relative assets (CSS/images/fonts), include `baseUrl` (e.g., `http://symfony/` in Docker) so they resolve correctly during rendering.
 
 ---
 
@@ -94,9 +133,9 @@ Use standard print CSS in your HTML:
 
 ```css
 @media print {
-  h1 { break-before: page; }      /* start a new page before each h1 */
-  .section { break-after: page; } /* new page after section */
-  .block { break-inside: avoid; } /* keep block together */
+    h1 { break-before: page; }      /* start a new page before each h1 */
+    .section { break-after: page; } /* new page after section */
+    .block { break-inside: avoid; } /* keep block together */
 }
 ```
 
