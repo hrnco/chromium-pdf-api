@@ -12,9 +12,11 @@ final class ChromePdf
 
     public function renderUrl(string $url, array $flags = []): string
     {
-        if (!filter_var($url, FILTER_VALIDATE_URL)) {
-            throw new RuntimeException('Invalid URL');
+        $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+        if (!in_array($scheme, ['http', 'https', 'file'], true)) {
+            throw new \RuntimeException('Invalid URL scheme (allowed: http, https, file)');
         }
+
         $tmpPdf = $this->tmpPdfPath();
 
         $defaultFlags = [
@@ -23,10 +25,17 @@ final class ChromePdf
             '--disable-gpu',
             '--disable-dev-shm-usage',
             '--no-pdf-header-footer',
-            // optionally add more:
-            // '--force-color-profile=srgb',
-            // '--lang=en-US',
         ];
+
+        if ($scheme === 'file') {
+            // allow loading HTTP resources from a file:// page
+            $defaultFlags[] = '--allow-file-access-from-files';
+            $defaultFlags[] = '--disable-web-security';
+            $defaultFlags[] = '--user-data-dir=/tmp/chrome-data'; // required for disable-web-security to take effect
+            // TIP: relax private-network blocking (Docker service hostnames like http://symfony/)
+            $defaultFlags[] = '--disable-features=BlockInsecurePrivateNetworkRequests,BlockInsecurePrivateNetworkRequestsFromPrivate';
+            // $defaultFlags[] = '--allow-running-insecure-content'; // TIP: only if you still see blocking
+        }
 
         $allFlags = array_merge($defaultFlags, $flags, [
             '--print-to-pdf=' . $tmpPdf,
@@ -37,17 +46,28 @@ final class ChromePdf
 
         if (!is_file($tmpPdf) || filesize($tmpPdf) === 0) {
             @unlink($tmpPdf);
-            throw new RuntimeException('PDF generation failed: empty output');
+            throw new \RuntimeException('PDF generation failed: empty output');
         }
-
-        return $tmpPdf; // caller should read it and delete afterwards
+        return $tmpPdf;
     }
+
 
     /** Simple HTML → PDF (without DevTools, just using a data URL) */
     public function renderHtml(string $html, array $flags = []): string
     {
-        $dataUrl = 'data:text/html;charset=utf-8,' . rawurlencode($html);
-        return $this->renderUrl($dataUrl, $flags);
+        $tmpHtml = tempnam(sys_get_temp_dir(), 'html_') . '.html';
+        if (file_put_contents($tmpHtml, $html) === false) {
+            throw new \RuntimeException('Failed to write temp HTML file');
+        }
+
+        // TIP: allow local file references if your HTML uses relative paths
+        $flags = array_merge(['--allow-file-access-from-files'], $flags);
+
+        try {
+            return $this->renderUrl('file://' . $tmpHtml, $flags);
+        } finally {
+            @unlink($tmpHtml);
+        }
     }
 
     private function detectChrome(): string
