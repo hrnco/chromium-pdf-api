@@ -12,9 +12,9 @@ require __DIR__ . '/../../src/ChromePdf.php';
  * Errors:    400 invalid input, 500 generation failure
  */
 
-$raw    = file_get_contents('php://input') ?: '';
-$ctype  = $_SERVER['CONTENT_TYPE'] ?? '';
-$url    = null;
+$raw = file_get_contents('php://input') ?: '';
+$ctype = $_SERVER['CONTENT_TYPE'] ?? '';
+$url = null;
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -54,7 +54,7 @@ try {
     // Response
     header('Content-Type: application/pdf');
     header('Content-Disposition: inline; filename=\"document.pdf\""');
-    header('Content-Length: ' . (string) filesize($pdfPath));
+    header('Content-Length: ' . (string)filesize($pdfPath));
     readfile($pdfPath);
 } catch (Throwable $e) {
     http_response_code(500);
