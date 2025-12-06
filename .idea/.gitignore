@@ -1,0 +1,14 @@
+# Default ignored files inside .idea (IDE-specific, not suitable for VCS)
+shelf/
+workspace.xml
+# Editor-based HTTP Client requests
+httpRequests/
+# Datasource local storage ignored files
+dataSources/
+dataSources.local.xml
+# IDE module/project files that are usually not shared
+chromium-pdf-api.iml
+modules.xml
+php.xml
+git_toolbox_prj.xml
+copilot.data.migration.agent.xml
