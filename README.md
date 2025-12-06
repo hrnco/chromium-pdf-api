@@ -152,6 +152,42 @@ Use standard print CSS in your HTML:
 
 ---
 
+## Integration tests / Local PDF generation
+
+This repository includes two helper integration scripts in `tests/` you can use to quickly verify the Docker image locally.
+
+Requirements
+- Docker (build + run)
+- Port 8080 free on the host (scripts map container port 80 -> host 8080)
+
+Scripts
+- `tests/run_docker_integration_from_url.sh` — builds the image, runs the container and POSTS a `url` form field to `/api/`. Output: `tests/out-from-url.pdf` (default URL: `https://example.com`, or pass a URL as the first argument).
+
+  Example:
+  ```bash
+  bash tests/run_docker_integration_from_url.sh https://www.wikipedia.org
+  ```
+
+- `tests/run_docker_integration_no_internet.sh` — builds the image and exercises the PDF generator using local HTML (suitable for environments without external network access).
+
+  Example:
+  ```bash
+  bash tests/run_docker_integration_no_internet.sh
+  ```
+
+What the scripts check
+- The Docker image is built and a container is started
+- The container HTTP server responds with `200 OK` before the test proceeds
+- The generated PDF file exists and has a non-trivial size (>~1KB)
+- On failure the scripts print the container logs and return a non-zero exit code
+
+Troubleshooting & tips
+- If port 8080 is in use, free it or edit the script to use a different host port.
+- If Docker build fails, run `docker build` manually to view full error details.
+- The `from_url` script sends the URL as a multipart form field named `url`. If your API requires JSON instead, you can modify the script to POST JSON.
+
+---
+
 ## Project structure (reference)
 
 ```
