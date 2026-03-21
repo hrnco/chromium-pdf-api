@@ -53,8 +53,8 @@ jobs:
           {
             echo "## Built images"
             echo
-            echo "- \`ghcr.io/${{ github.repository }}:latest\`"
-            echo "- \`ghcr.io/${{ github.repository }}:${{ env.APP_VERSION }}.${{ github.run_number }}\`"
-            echo "- \`docker.io/${{ github.repository }}:latest\`"
-            echo "- \`docker.io/${{ github.repository }}:${{ env.APP_VERSION }}.${{ github.run_number }}\`"
+            echo "ghcr.io/${{ github.repository }}:latest"
+            echo "ghcr.io/${{ github.repository }}:${{ env.APP_VERSION }}.${{ github.run_number }}"
+            echo "docker.io/${{ github.repository }}:latest"
+            echo "docker.io/${{ github.repository }}:${{ env.APP_VERSION }}.${{ github.run_number }}"
           } >> "$GITHUB_STEP_SUMMARY"
