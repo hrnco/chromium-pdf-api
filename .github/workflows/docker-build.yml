@@ -29,6 +29,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       - uses: docker/build-push-action@v6
         with:
           context: .
@@ -38,5 +43,18 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository }}:latest
             ghcr.io/${{ github.repository }}:${{ env.APP_VERSION }}.${{ github.run_number }}
+            docker.io/${{ github.repository }}:latest
+            docker.io/${{ github.repository }}:${{ env.APP_VERSION }}.${{ github.run_number }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Write built images to summary
+        run: |
+          {
+            echo "## Built images"
+            echo
+            echo "- \`ghcr.io/${{ github.repository }}:latest\`"
+            echo "- \`ghcr.io/${{ github.repository }}:${{ env.APP_VERSION }}.${{ github.run_number }}\`"
+            echo "- \`docker.io/${{ github.repository }}:latest\`"
+            echo "- \`docker.io/${{ github.repository }}:${{ env.APP_VERSION }}.${{ github.run_number }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
